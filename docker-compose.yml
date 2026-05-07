@@ -31,7 +31,7 @@ services:
 
   tiled:
     # see the file ./tiled/deploy/config.yml for detailed configuration of tiled
-    image: ghcr.io/bluesky/tiled:v0.1.0a114
+    image: ghcr.io/bluesky/tiled:0.2.0
     ports:
       - "8000:8000"
     environment:
@@ -129,7 +129,10 @@ services:
   mlex_segmentation:
     image: ghcr.io/mlexchange/mlex_highres_segmentation:main
     command: sh -c "python scripts/save_mlflow_algorithm.py || true && gunicorn -b 0.0.0.0:8075 --timeout 300 --graceful-timeout 300 --workers 1 --reload app:server"
+    volumes:
+      - ./data/annotations:/app/data
     environment:
+      - EXPORT_FILE_PATH=/app/data/exported_annotation_data.json
       - DATA_TILED_URI=http://tiled:8000/api/v1/metadata/recons
       - DATA_TILED_API_KEY=${TILED_API_KEY}
       - MASK_TILED_URI=http://tiled:8000/
@@ -160,6 +163,8 @@ services:
       mle_net:
 
   sam3-inference:
+    profiles:
+      - sam3-inference
     build:
       context: .
       dockerfile: Dockerfile.sam3-inference
