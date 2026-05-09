@@ -31,7 +31,7 @@ services:
 
   tiled:
     # see the file ./tiled/deploy/config.yml for detailed configuration of tiled
-    image: ghcr.io/bluesky/tiled:v0.1.0a114
+    image: ghcr.io/bluesky/tiled:0.2.0
     ports:
       - "8000:8000"
     environment:
@@ -129,7 +129,10 @@ services:
   mlex_segmentation:
     image: ghcr.io/mlexchange/mlex_highres_segmentation:main
     command: sh -c "python scripts/save_mlflow_algorithm.py || true && gunicorn -b 0.0.0.0:8075 --reload app:server"
+    volumes:
+      - ./data/annotations:/app/data
     environment:
+      - EXPORT_FILE_PATH=/app/data/exported_annotation_data.json
       - DATA_TILED_URI=http://tiled:8000/api/v1/metadata/recons
       - DATA_TILED_API_KEY=${TILED_API_KEY}
       - MASK_TILED_URI=http://tiled:8000/
@@ -157,6 +160,38 @@ services:
     networks:
       mle_net:
 
+  lightly_infer:
+    build:
+      context: ./scripts
+      dockerfile: ../Dockerfile.lightly
+    container_name: lightly-infer
+    environment:
+      # MLflow
+      - MLFLOW_TRACKING_URI_OUTSIDE=http://mlflow:5000
+      - MLFLOW_TRACKING_USERNAME=${MLFLOW_TRACKING_USERNAME}
+      - MLFLOW_TRACKING_PASSWORD=${MLFLOW_TRACKING_PASSWORD}
+      # Tiled
+      - TILED_API_KEY=${TILED_SINGLE_USER_API_KEY}
+      - DATA_TILED_URI_IMAGES=http://tiled:8000/api/v1/metadata/recons/42tiff
+      - DATA_TILED_URI_MASKS=http://tiled:8000/api/v1/metadata/recons/42tiff_7classes_masks_tiff
+    volumes:
+      # Mount lightly_cache so pretrained weights are reused across runs
+      - ./data/lightly_cache:/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache
+      # Mount results output directory
+      - ./data/lightly_results:/results
+      - ./data/lightly_out_finetuned:/lightly_out_finetuned
+      - ./data/tmp:/tmp
+      # Mount scripts so config files are accessible
+      - ./scripts:/app
+    shm_size: '8gb'
+    depends_on:
+      - mlflow
+      - tiled
+    networks:
+      mle_net:
+    # Run once and exit — use `docker compose run lightly_infer` to trigger
+    profiles:
+      - infer
 
 networks:
   mle_net:

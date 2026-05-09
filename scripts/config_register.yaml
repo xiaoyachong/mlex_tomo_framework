@@ -1,0 +1,52 @@
+# config_register.yaml
+# Configuration for: python save_mlflow_wrapper.py
+# Run this BEFORE finetune.py.
+
+# ---------------------------------------------------------------------------
+# Registration switches — set true/false to control which models to register
+# ---------------------------------------------------------------------------
+register:
+  # vit size options: vitt16, vitt16plus, vits16, vits16plus, vitb16, vitl16,
+  #                   vitl16plus, vith16plus, vit7b16
+  #                   (not all vit sizes support all dataset variants — check list above)
+  vit:               "vits16"
+
+  # eomt: backbone .pth file from lightly_cache (dinov3_<vit>_lvd1689m.pth)
+  # set to true only if you have the .pth file in lightly_cache
+  eomt:              false   # uses dinov3_<vit>_lvd1689m.pth from cache
+  eomt_coco:         true   # dinov3/<vit>-eomt-coco         (COCO-Stuff)
+  eomt_cityscapes:   true   # dinov3/<vit>-eomt-cityscapes   (Cityscapes)
+  eomt_cityscapes_petiole: true  # custom finetuned .ckpt
+
+# ---------------------------------------------------------------------------
+# MLflow
+# ---------------------------------------------------------------------------
+mlflow:
+  tracking_uri:    "http://localhost:5000"   # overridden by env MLFLOW_TRACKING_URI_OUTSIDE
+  experiment_name: "dinov3_segmentation"
+
+# ---------------------------------------------------------------------------
+# Custom finetuned checkpoint (used when eomt_cityscapes_petiole: true)
+# ---------------------------------------------------------------------------
+custom:
+  pt_path: "/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache/dinov3_vits16_eomt_cityscapes_petiole.ckpt"
+
+# ---------------------------------------------------------------------------
+# Cache directory — used for lightly_train type models
+# ---------------------------------------------------------------------------
+cache:
+  lightly_train_cache_dir:       "/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache"
+  lightly_train_model_cache_dir: "/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache"
+  torch_home:                    "/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache"
+
+# ---------------------------------------------------------------------------
+# Pip requirements stored inside each MLflow model artifact
+# ---------------------------------------------------------------------------
+pip_requirements:
+  - "lightly-train==0.13.2"
+  - "numpy==2.2.6"
+  - "torch==2.9.1"
+  - "torchvision==0.24.1"
+  - "pytorch-lightning==2.6.0"
+  - "Pillow"
+  - "mlflow==2.22.0"
