@@ -166,22 +166,19 @@ services:
       dockerfile: ../Dockerfile.lightly
     container_name: lightly-infer
     environment:
-      # MLflow
       - MLFLOW_TRACKING_URI_OUTSIDE=http://mlflow:5000
       - MLFLOW_TRACKING_USERNAME=${MLFLOW_TRACKING_USERNAME}
       - MLFLOW_TRACKING_PASSWORD=${MLFLOW_TRACKING_PASSWORD}
-      # Tiled
       - TILED_API_KEY=${TILED_SINGLE_USER_API_KEY}
       - DATA_TILED_URI_IMAGES=http://tiled:8000/api/v1/metadata/recons/42tiff
       - DATA_TILED_URI_MASKS=http://tiled:8000/api/v1/metadata/recons/42tiff_7classes_masks_tiff
+      - MLFLOW_CACHE_DIR=/mlflow_cache
     volumes:
-      # Mount lightly_cache so pretrained weights are reused across runs
-      - ./data/lightly_cache:/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache
-      # Mount results output directory
-      - ./data/lightly_results:/results
+      - ./data/lightly_cache:/lightly_cache
       - ./data/lightly_out_finetuned:/lightly_out_finetuned
       - ./data/tmp:/tmp
-      # Mount scripts so config files are accessible
+      - ./data/mlflow_cache:/mlflow_cache
+      - ./data/lightly_results:/results
       - ./scripts:/app
     shm_size: '8gb'
     depends_on:
@@ -189,7 +186,6 @@ services:
       - tiled
     networks:
       mle_net:
-    # Run once and exit — use `docker compose run lightly_infer` to trigger
     profiles:
       - infer
 

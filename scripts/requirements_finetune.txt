@@ -26,3 +26,5 @@ dask
 # --- Config / env loading ---
 pyyaml
 python-dotenv
+
+mlex_utils[all] @ git+https://github.com/mlexchange/mlex_utils.git

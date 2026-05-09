@@ -20,6 +20,7 @@ from pathlib import Path
 
 import mlflow
 import numpy as np
+from mlex_utils.mlflow_utils.mlflow_model_client import MLflowModelClient
 import yaml
 from dotenv import load_dotenv
 from PIL import Image
@@ -34,7 +35,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 RESULTS_DIR      = Path("/results")
-REGISTER_CONFIG  = Path("config_register.yaml")
 INFERENCE_CONFIG = Path("config_inference.yaml")
 
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -83,21 +83,6 @@ def mask_to_rgb(mask: np.ndarray) -> np.ndarray:
     return rgb
 
 
-def _reg_model_names(reg_cfg: dict) -> list[str]:
-    reg = reg_cfg["register"]
-    vit = reg["vit"]
-    names = []
-    if reg.get("eomt"):
-        names.append(f"dinov3_{vit}_eomt")
-    if reg.get("eomt_coco"):
-        names.append(f"dinov3_{vit}_eomt_coco")
-    if reg.get("eomt_cityscapes"):
-        names.append(f"dinov3_{vit}_eomt_cityscapes")
-    if reg.get("eomt_cityscapes_petiole"):
-        names.append(f"dinov3_{vit}_eomt_cityscapes_petiole")
-    return names
-
-
 def _inf_model_names(inf_cfg: dict) -> list[str]:
     inf = inf_cfg["infer"]
     vit = inf["vit"]
@@ -110,55 +95,10 @@ def _inf_model_names(inf_cfg: dict) -> list[str]:
         names.append(f"dinov3_{vit}_eomt_cityscapes")
     if inf.get("eomt_cityscapes_petiole"):
         names.append(f"dinov3_{vit}_eomt_cityscapes_petiole")
-    # Finetuned models — arbitrary names registered by finetune.py
     for name in inf.get("finetuned") or []:
         names.append(name)
     return names
 
-
-def ensure_registered(reg_cfg: dict) -> None:
-    tracking_uri = os.getenv(
-        "MLFLOW_TRACKING_URI_OUTSIDE", reg_cfg["mlflow"]["tracking_uri"]
-    )
-    mlflow.set_tracking_uri(tracking_uri)
-    client = mlflow.MlflowClient()
-
-    model_names = _reg_model_names(reg_cfg)
-    missing_names = []
-
-    for model_name in model_names:
-        try:
-            versions = client.search_model_versions(f"name='{model_name}'")
-            if versions:
-                logger.info(f"'{model_name}' already registered — skipping.")
-            else:
-                missing_names.append(model_name)
-        except Exception:
-            missing_names.append(model_name)
-
-    if not missing_names:
-        logger.info("All models already registered.")
-        return
-
-    logger.info(f"Models to register: {missing_names}")
-
-    cache = reg_cfg["cache"]
-    os.environ["LIGHTLY_TRAIN_CACHE_DIR"] = cache["lightly_train_cache_dir"]
-    os.environ["LIGHTLY_TRAIN_MODEL_CACHE_DIR"] = cache["lightly_train_model_cache_dir"]
-    os.environ["TORCH_HOME"] = cache["torch_home"]
-
-    import subprocess
-    import sys
-
-    result = subprocess.run(
-        [sys.executable, "save_mlflow_wrapper.py", "--config", str(REGISTER_CONFIG)],
-        check=False,
-    )
-
-    if result.returncode != 0:
-        logger.error("Registration failed.")
-    else:
-        logger.info("Registration complete.")
 
 
 def load_model(inf_cfg: dict, model_name: str):
@@ -167,20 +107,18 @@ def load_model(inf_cfg: dict, model_name: str):
     )
     model_version = inf_cfg["mlflow"]["model_version"]
 
-    mlflow.set_tracking_uri(tracking_uri)
+    client = MLflowModelClient(
+        tracking_uri=tracking_uri,
+        cache_dir=os.getenv("MLFLOW_CACHE_DIR"),
+    )
 
-    if str(model_version).lower() == "latest":
-        client = mlflow.MlflowClient()
-        versions = client.search_model_versions(f"name='{model_name}'")
-        if not versions:
-            raise ValueError(f"No versions found for model '{model_name}'")
-        latest = max(versions, key=lambda v: int(v.version)).version
-        model_uri = f"models:/{model_name}/{latest}"
-    else:
-        model_uri = f"models:/{model_name}/{model_version}"
+    # Resolve "latest" to an actual version number
+    version = None if str(model_version).lower() == "latest" else str(model_version)
 
-    logger.info(f"Loading model from: {model_uri}")
-    model = mlflow.pyfunc.load_model(model_uri)
+    logger.info(f"Loading model '{model_name}' version={version or 'latest'} ...")
+    model = client.load_model(model_name, version=version)
+    if model is None:
+        raise ValueError(f"Failed to load model '{model_name}' from MLflow.")
     logger.info("✅ Model loaded")
     return model
 
@@ -286,13 +224,10 @@ def save_results(
 
 
 if __name__ == "__main__":
-    reg_cfg = load_yaml(REGISTER_CONFIG)
     inf_cfg = load_yaml(INFERENCE_CONFIG)
 
     os.environ["MLFLOW_TRACKING_USERNAME"] = os.getenv("MLFLOW_TRACKING_USERNAME", "")
     os.environ["MLFLOW_TRACKING_PASSWORD"] = os.getenv("MLFLOW_TRACKING_PASSWORD", "")
-
-    ensure_registered(reg_cfg)
 
     img_uint8, gt_mask, img_key = load_sample(inf_cfg)
 
@@ -307,6 +242,13 @@ if __name__ == "__main__":
 
         try:
             model = load_model(inf_cfg, model_name)
+            if model is None:
+                logger.warning(
+                    f"Skipping '{model_name}' — not found in MLflow registry. "
+                    "Register it first (pretrained: save_mlflow_wrapper.py, "
+                    "finetuned: finetune.py)."
+                )
+                continue
             pred_mask = run_inference(model, img_uint8)
             save_results(img_uint8, gt_mask, pred_mask, img_key, inf_cfg, model_name)
 
