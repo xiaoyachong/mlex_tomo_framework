@@ -1,6 +1,5 @@
 # config_register.yaml
 # Configuration for: python save_mlflow_wrapper.py
-# Run this BEFORE finetune.py.
 
 # ---------------------------------------------------------------------------
 # Registration switches — set true/false to control which models to register
@@ -22,26 +21,27 @@ register:
 # MLflow
 # ---------------------------------------------------------------------------
 mlflow:
-  tracking_uri:    "http://localhost:5000"   # overridden by env MLFLOW_TRACKING_URI_OUTSIDE
   experiment_name: "dinov3_segmentation"
 
 # ---------------------------------------------------------------------------
 # Custom finetuned checkpoint (used when eomt_cityscapes_petiole: true)
 # ---------------------------------------------------------------------------
 custom:
-  pt_path: "/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache/dinov3_vits16_eomt_cityscapes_petiole.ckpt"
+  pt_path: "/lightly_cache/dinov3_vits16_eomt_cityscapes_petiole.ckpt"
 
 # ---------------------------------------------------------------------------
 # Cache directory — used for lightly_train type models
 # ---------------------------------------------------------------------------
 cache:
-  lightly_train_cache_dir:       "/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache"
-  lightly_train_model_cache_dir: "/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache"
-  torch_home:                    "/Users/xiaoyachong/Documents/3RSE/mlex_tomo_framework/data/lightly_cache"
+  lightly_train_cache_dir:       "/lightly_cache"
+  lightly_train_model_cache_dir: "/lightly_cache"
+  torch_home:                    "/lightly_cache"
 
 # ---------------------------------------------------------------------------
 # Pip requirements stored inside each MLflow model artifact
 # ---------------------------------------------------------------------------
+# Pip requirements stored inside each MLflow model artifact
+# (these are reinstalled by MLflow when loading the model for inference)
 pip_requirements:
   - "lightly-train==0.13.2"
   - "numpy==2.2.6"
@@ -50,3 +50,4 @@ pip_requirements:
   - "pytorch-lightning==2.6.0"
   - "Pillow"
   - "mlflow==2.22.0"
+  - "mlex_lightly[all] @ git+https://github.com/xiaoyachong/mlex_lightlytrain_segmentation_prototype.git"

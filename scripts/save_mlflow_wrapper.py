@@ -23,7 +23,7 @@ import mlflow
 import yaml
 from dotenv import load_dotenv
 
-from lightly_mlflow_wrapper import LightlySegWrapper
+from mlex_lightly.wrapper import LightlySegWrapper
 
 load_dotenv(dotenv_path="../.env")
 
@@ -41,9 +41,7 @@ logger = logging.getLogger(__name__)
 def load_config(config_path: str = "config_register.yaml") -> dict:
     with open(config_path) as f:
         cfg = yaml.safe_load(f)
-    cfg["mlflow"]["tracking_uri"] = os.getenv(
-        "MLFLOW_TRACKING_URI_OUTSIDE", cfg["mlflow"]["tracking_uri"]
-    )
+    cfg["mlflow"]["tracking_uri"] = os.environ["MLFLOW_TRACKING_URI_OUTSIDE"]
     os.environ["MLFLOW_TRACKING_USERNAME"] = os.getenv("MLFLOW_TRACKING_USERNAME", "")
     os.environ["MLFLOW_TRACKING_PASSWORD"] = os.getenv("MLFLOW_TRACKING_PASSWORD", "")
 
@@ -208,7 +206,6 @@ def register_one(model_entry: dict, cfg: dict) -> tuple[str | None, str | None]:
                 artifacts={"checkpoint": str(checkpoint_path)},
                 registered_model_name=model_name,
                 pip_requirements=pip_requirements,
-                code_path=["lightly_mlflow_wrapper.py"],
             )
             mlflow.log_metric("registration_time_s", time.time() - t0)
 

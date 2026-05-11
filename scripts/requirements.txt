@@ -27,4 +27,6 @@ dask
 pyyaml
 python-dotenv
 
+# --- MLExchange utilities ---
 mlex_utils[all] @ git+https://github.com/mlexchange/mlex_utils.git
+mlex_lightly[all] @ git+https://github.com/xiaoyachong/mlex_lightlytrain_segmentation_prototype.git

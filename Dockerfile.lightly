@@ -11,4 +11,4 @@ WORKDIR /app
 
 COPY . .
 
-RUN pip install -r requirements_finetune.txt
+RUN pip install -r requirements.txt

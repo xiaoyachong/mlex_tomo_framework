@@ -14,24 +14,15 @@ infer:
 
   # Finetuned models — add any registered finetuned model name here
   # These are registered by finetune.py under mlflow.finetuned_model_name
-  finetuned:
-    - "petiole_vits16_eomt_cityscapes_ft"
+  # finetuned:
+  #   - "petiole_vits16_eomt_cityscapes_ft"
 
 # ---------------------------------------------------------------------------
 # MLflow
 # ---------------------------------------------------------------------------
 mlflow:
-  tracking_uri:  "http://localhost:5000"   # overridden by env MLFLOW_TRACKING_URI_OUTSIDE
   experiment_name: "dinov3_segmentation"
   model_version: "latest"                  # "latest" or a specific version e.g. "1", "2"
-
-# ---------------------------------------------------------------------------
-# Tiled — images and masks containers
-# ---------------------------------------------------------------------------
-tiled:
-  images_uri: "http://tiled:8000/api/v1/metadata/recons/42tiff"
-  masks_uri:  "http://tiled:8000/api/v1/metadata/recons/42tiff_7classes_masks_tiff"
-  api_key:    null    # overridden by env TILED_API_KEY
 
 # ---------------------------------------------------------------------------
 # Dataset classes

@@ -100,11 +100,8 @@ def _inf_model_names(inf_cfg: dict) -> list[str]:
     return names
 
 
-
 def load_model(inf_cfg: dict, model_name: str):
-    tracking_uri = os.getenv(
-        "MLFLOW_TRACKING_URI_OUTSIDE", inf_cfg["mlflow"]["tracking_uri"]
-    )
+    tracking_uri  = os.environ["MLFLOW_TRACKING_URI_OUTSIDE"]
     model_version = inf_cfg["mlflow"]["model_version"]
 
     client = MLflowModelClient(
@@ -128,13 +125,15 @@ def image_to_mask_key(img_key: str) -> str:
 
 
 def load_sample(inf_cfg: dict) -> tuple[np.ndarray, np.ndarray, str]:
-    api_key = os.getenv("TILED_API_KEY", inf_cfg["tiled"]["api_key"])
+    api_key      = os.environ["TILED_API_KEY"]
+    images_uri   = os.environ["DATA_TILED_URI_IMAGES"]
+    masks_uri    = os.environ["DATA_TILED_URI_MASKS"]
 
-    tiled_images = from_uri(inf_cfg["tiled"]["images_uri"], api_key=api_key)
-    tiled_masks = from_uri(inf_cfg["tiled"]["masks_uri"], api_key=api_key)
+    tiled_images = from_uri(images_uri, api_key=api_key)
+    tiled_masks  = from_uri(masks_uri,  api_key=api_key)
 
     image_keys = list(tiled_images)
-    mask_keys = set(tiled_masks)
+    mask_keys  = set(tiled_masks)
 
     logger.info(f"Image keys (first 3): {image_keys[:3]}")
     logger.info(f"Mask  keys (first 3): {list(mask_keys)[:3]}")
@@ -155,7 +154,7 @@ def load_sample(inf_cfg: dict) -> tuple[np.ndarray, np.ndarray, str]:
     logger.info(f"Selected mask  key: {msk_key}")
 
     raw_image = np.array(tiled_images[img_key])
-    raw_mask = np.array(tiled_masks[msk_key])
+    raw_mask  = np.array(tiled_masks[msk_key])
 
     # Minimal fix: Tiled stores containers as (n, 2560, 2560).
     # Select the same slice index for image and mask.

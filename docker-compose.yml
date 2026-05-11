@@ -160,11 +160,11 @@ services:
     networks:
       mle_net:
 
-  lightly_infer:
+  lightly:
     build:
       context: ./scripts
       dockerfile: ../Dockerfile.lightly
-    container_name: lightly-infer
+    container_name: lightly
     environment:
       - MLFLOW_TRACKING_URI_OUTSIDE=http://mlflow:5000
       - MLFLOW_TRACKING_USERNAME=${MLFLOW_TRACKING_USERNAME}
@@ -175,19 +175,16 @@ services:
       - MLFLOW_CACHE_DIR=/mlflow_cache
     volumes:
       - ./data/lightly_cache:/lightly_cache
-      - ./data/lightly_out_finetuned:/lightly_out_finetuned
-      - ./data/tmp:/tmp
       - ./data/mlflow_cache:/mlflow_cache
       - ./data/lightly_results:/results
       - ./scripts:/app
-    shm_size: '8gb'
     depends_on:
       - mlflow
       - tiled
     networks:
       mle_net:
     profiles:
-      - infer
+      - lightly
 
 networks:
   mle_net:
