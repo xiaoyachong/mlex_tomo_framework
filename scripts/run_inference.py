@@ -252,6 +252,4 @@ if __name__ == "__main__":
             save_results(img_uint8, gt_mask, pred_mask, img_key, inf_cfg, model_name)
 
         except Exception as e:
-            logger.error(f"Inference failed for '{model_name}': {e}")
-            import traceback
-            traceback.print_exc()
+            logger.exception(f"Inference failed for '{model_name}': {e}")
